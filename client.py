@@ -1,4 +1,6 @@
 import socket
+from tcp.segment import TCPSegment
+from tcp.converter import TCPSegmentConverter as converter
 
 # Definir tamaño máximo de mensajes
 MAX_SIZE = 16
@@ -15,6 +17,6 @@ if __name__ == "__main__":
     sent: int = 0
     while sent < to_send:
         data: str = file[sent:sent+16]
-        s.sendto(data.encode(), ("localhost", 5000))
+        segment: TCPSegment = TCPSegment(data=data.encode())
+        s.sendto(converter.create_segment(segment), ("localhost", 5000))
         sent += 16
-

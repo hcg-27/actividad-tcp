@@ -1,4 +1,6 @@
 import socket
+from tcp.segment import TCPSegment
+from tcp.converter import TCPSegmentConverter as converter
 
 if __name__ == "__main__":
     # Crear socket UDP y configurarlo
@@ -7,6 +9,7 @@ if __name__ == "__main__":
 
     # Recibir mensajes
     while True:
-        data, _ = s.recvfrom(16)
-        print(data)
+        data, _ = s.recvfrom(21)
+        segment: TCPSegment = converter.parse_segment(data)
+        print(segment)
 
