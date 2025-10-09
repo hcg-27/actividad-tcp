@@ -16,3 +16,6 @@ dmypy.json
 # Editor
 .vscode/
 .spyproject/
+
+# swap files
+*.swp

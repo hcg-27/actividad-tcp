@@ -1,6 +1,8 @@
-# Actividad Para esta actividad deberá programar una clase **SocketTCP** la
-cual implementará sockets orientados a conexión usando **Stop & Wait**. Esta
-clase deberá funcionar de forma similar a los sockets orientados a conexión de
+# Actividad
+
+Para esta actividad deberá programar una clase **SocketTCP** la cual 
+implementará sockets orientados a conexión usando **Stop & Wait**. Esta clase
+deberá funcionar de forma similar a los sockets orientados a conexión de
 python. Además, usted deberá implementar un cliente y un servidor que usen
 objetos tipo **SocketTCP** para comunicarse. Su clase **SocketTCP** deberá
 utilizar sockets UDP para enviar la información, por lo que su tarea será
