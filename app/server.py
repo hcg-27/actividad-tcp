@@ -17,5 +17,5 @@ def main() -> None:
             # Imprimir mensajes en pantalla
             print(msg)
     except KeyboardInterrupt:
-        print("...Server DOWN...")
+        print("\n...Server DOWN...")
 
