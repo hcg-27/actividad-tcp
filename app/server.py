@@ -1,5 +1,7 @@
 import socket 
 from .config import *
+from tcp.segment import TCPSegment
+from tcp.codec import SegmentCodec as codec
 
 def main() -> None:
 
@@ -12,10 +14,11 @@ def main() -> None:
     try:
         # Esperar mensajes
         while True:
-            msg, _ = s.recvfrom(BUFF_SIZE)
+            data, _ = s.recvfrom(BUFF_SIZE)
+            segment = codec.parse_segment(data)
 
             # Imprimir mensajes en pantalla
-            print(msg)
+            print(segment)
     except KeyboardInterrupt:
         print("\n...Server DOWN...")
 

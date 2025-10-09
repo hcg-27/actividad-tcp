@@ -1,4 +1,4 @@
-BUFF_SIZE = 16
+BUFF_SIZE = 21
 SERVER_IP = "localhost"
 SERVER_PORT = 5000
 

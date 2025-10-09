@@ -1,6 +1,8 @@
 import socket
 from pathlib import Path
 from .config import *
+from tcp.segment import TCPSegment
+from tcp.codec import SegmentCodec as codec
 
 def main() -> None:
 
@@ -24,8 +26,8 @@ def main() -> None:
         while sent < to_send:
         
             data = line[sent:sent+16]
-            print(line[sent:sent+16])
-            s.sendto(data, (SERVER_IP, SERVER_PORT))
+            segment = TCPSegment(seq=118, data=data)
+            s.sendto(codec.create_segment(segment), (SERVER_IP, SERVER_PORT))
 
             # Preparar próxima iteración
             sent += 16
