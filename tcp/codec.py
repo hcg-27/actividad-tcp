@@ -23,9 +23,9 @@ class SegmentCodec:
 
         # Crear flags
         flags: bytes = 0
-        flags = (flags << 0) | int(segment.syn)
+        flags = (flags << 1) | int(segment.syn)
         flags = (flags << 1) | int(segment.ack)
-        flags = (flags << 2) | int(segment.fin)
+        flags = (flags << 1) | int(segment.fin)
 
         # Pack struct
         header: bytes = struct.pack("!BI", flags, segment.seq)
