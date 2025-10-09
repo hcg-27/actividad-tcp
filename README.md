@@ -42,7 +42,7 @@ ACK
    de origen, número de secuencia, **todo lo que usted considere necesario**).
    Su constructor no debe recibir parámetros, es decir, se invoca como:
 
-    my_socket = SocketTCP()
+    > my_socket = SocketTCP()
 
 3. Considerando headers **TCP** que contengan la información necesaria para
    usar Stop & Wait como se mostró en clases, añade a su clase dos funciones
