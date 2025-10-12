@@ -1,18 +1,26 @@
+import struct
+import math
 from random import randint
 from socket import socket, AF_INET, SOCK_DGRAM
 from .constants import *
 from .segment import TCPSegment
 from .codec import SegmentCodec
+from .exceptions import AttemptLimitException
 
 class SocketTCP:
     def __init__(self) -> None:
+
         self.udp: socket = socket(AF_INET, SOCK_DGRAM) 
         self.source: tuple[str, int] = ("", 0)
         self.destination: tuple[str, int] = ("", 0)
         self.seq: int = 0
         self.codec: SegmentCodec = SegmentCodec()
+        self.waiting_first: bool = True
+        self.received: int = 0
+        self.to_receive: int | float = math.inf
 
     def bind(self, address: tuple[str, int]) -> None:
+
         self.udp.bind(address)
         self.source = self.udp.getsockname() 
 
@@ -78,4 +86,129 @@ class SocketTCP:
             # Ajustar número de secuencia
             new_socket.seq = ack.seq
 
-        return new_socket, new_socket.destination
+        return new_socket, new_socket.source
+
+    def send(self, message: bytes) -> None:
+
+        # Obtener largo del mensaje
+        length = len(message)
+
+        # Configurar timeout de MAX_TIMEOUT
+        self.udp.settimeout(3600)
+
+        # Enviar largo del mensaje
+        attempt = 0
+        while attempt < MAX_ATTEMPTS:
+
+            try:
+
+                segment = TCPSegment(data=struct.pack("!Q", length), seq=self.seq)
+                data = self.codec.create_segment(segment)
+                self.udp.sendto(data, self.destination)
+
+                # Esperar ACK
+                data = self.udp.recvfrom(DGRAM_SIZE)
+                ack = self.codec.parse_segment(data[0])
+
+                # Verificar que sea el ACK correcto
+                if ack.seq == self.seq + 1:
+
+                    self.seq = ack.seq
+                    break
+
+                else:
+
+                    attempt +=1
+
+            except TimeoutError:
+
+                attempt += 1
+
+        else:
+
+            error_message = "Error: no se puedo enviar largo del mensaje"
+            raise AttemptLimitException(error_message)
+
+
+        # Enviar mensaje por trozos de 16 bytes
+        attempt = 0
+        sent = 0
+        to_send = length
+        while sent < to_send and attempt < MAX_ATTEMPTS:
+
+            try:
+
+                segment = TCPSegment(seq=self.seq, data=message[sent:sent+16])
+                data = self.codec.create_segment(segment)
+                self.udp.sendto(data, self.destination)
+
+                # Esperar ACK
+                data = self.udp.recvfrom(DGRAM_SIZE)
+                ack = self.codec.parse_segment(data[0])
+
+                # Verificar número de secuencia
+                if ack.seq == self.seq + 1:
+
+                    self.seq = ack.seq
+                    sent += 16
+                    
+                    # Reiniciar contandor de intentos
+                    attempt = 0
+
+                else:
+
+                    attempt += 1
+            
+            except TimeoutError:
+
+                attempt += 1
+
+        else:
+            
+            # Chequear si se alcanzo el máximo de intentos
+            if attempt == MAX_ATTEMPTS:
+
+                error_message = "Error: no se pudo enviar bytes"
+                error_message += f"[{sent}:{sent+16}]"
+                raise AttemptLimitException
+
+            # En caso contrario no hubo ningún error
+
+    def recv(self, buff_size: int) -> bytes:
+
+        received_message = b''
+        while (len(received_message) < buff_size and
+               self.received < self.to_receive):
+
+            data = self.udp.recvfrom(DGRAM_SIZE)
+            segment = self.codec.parse_segment(data[0])
+
+            # Veríficar que sea el primer mensaje
+            if self.waiting_first and segment.seq == self.seq:
+
+                self.seq += 1
+                self.to_receive = struct.unpack("!Q", segment.data)[0]
+                self.waiting_first = False
+
+            # Si no es el primer mensaje, verificar número de secuencia
+            elif segment.seq == self.seq:
+
+                self.seq += 1
+                self.received += len(segment.data)
+                print(segment.data)
+                received_message += segment.data
+            
+            # Enviar ACK
+            segment = TCPSegment(ack=True, seq=self.seq)
+            data = self.codec.create_segment(segment)
+            self.udp.sendto(data, self.destination)
+
+        # Resetear variables (de ser necesario)
+        if self.received >= self.to_receive:
+            
+            self.waiting_first = True
+            self.received = 0
+            self.to_receive = math.inf
+
+        return received_message
+

@@ -33,7 +33,26 @@ def main() -> None:
     #        # Preparar próxima iteración
     #        sent += 16
 
-    client = SocketTCP()
-    client.connect((SERVER_IP, SERVER_PORT))
+    # =================================
 
-    print(client.destination, client.source, client.seq)
+    #client = SocketTCP()
+    #client.connect((SERVER_IP, SERVER_PORT))
+
+    #print(client.destination, client.source, client.seq)
+
+    # =================================
+
+    client_socketTCP = SocketTCP()
+    client_socketTCP.connect((SERVER_IP, SERVER_PORT))
+
+    # Test 1
+    message = "Mensje de len=16".encode()
+    client_socketTCP.send(message)
+
+    # Test 2
+    message = "Mensaje de largo 19".encode()
+    client_socketTCP.send(message)
+
+    # Test 3
+    message = "Mensaje de largo 19".encode()
+    client_socketTCP.send(message)
