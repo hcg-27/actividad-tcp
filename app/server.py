@@ -37,6 +37,14 @@ def main() -> None:
     server_socket.bind((SERVER_IP, SERVER_PORT))
     connection_socketTCP, new_address = server_socket.accept()
 
+    import time
+    try:
+        print("Esperando netem")
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("continuando operacion")
+
     # Test 1
     buff_size = 16
     full_message = connection_socketTCP.recv(buff_size)

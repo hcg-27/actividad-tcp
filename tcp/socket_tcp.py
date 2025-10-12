@@ -94,7 +94,7 @@ class SocketTCP:
         length = len(message)
 
         # Configurar timeout de MAX_TIMEOUT
-        self.udp.settimeout(3600)
+        self.udp.settimeout(MAX_TIMEOUT)
 
         # Enviar largo del mensaje
         attempt = 0

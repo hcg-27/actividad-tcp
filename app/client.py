@@ -41,10 +41,18 @@ def main() -> None:
     #print(client.destination, client.source, client.seq)
 
     # =================================
-
     client_socketTCP = SocketTCP()
     client_socketTCP.connect((SERVER_IP, SERVER_PORT))
 
+    # Busy-waiting para esperar netem
+    import time
+    try:
+        print("esperando netem")
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("continuando operacion")
+    
     # Test 1
     message = "Mensje de len=16".encode()
     client_socketTCP.send(message)
