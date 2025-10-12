@@ -166,11 +166,18 @@ class SocketTCP:
         else:
             
             # Chequear si se alcanzo el máximo de intentos
-            if attempt == MAX_ATTEMPTS and to_send > sent + 16:
+            if attempt == MAX_ATTEMPTS #and to_send > sent + 16:
 
-                error_message = "Error: no se pudo enviar bytes"
+                error_message = "Error: no se reecibio ack del mensaje: "
                 error_message += f"[{sent}:{sent+16}]"
-                raise AttemptLimitException
+                raise AttemptLimitException(error_message)
+            
+            #else:
+
+                # Si se llega a esta parte, es porque lo único que 
+                # falta es el ACK del último mensaje, que se asume
+                # recebido por el destinatario
+                #self.seq = len(message[sent:sent+16])
 
             # En caso contrario no hubo ningún error
 
@@ -211,4 +218,8 @@ class SocketTCP:
             self.to_receive = math.inf
 
         return received_message 
+
+    def close() -> None: ...
+
+    def recv_close() -> None: ...
 
