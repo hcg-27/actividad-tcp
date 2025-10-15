@@ -6,37 +6,11 @@ from tcp.socket_tcp import SocketTCP
 
 def main() -> None:
 
-    # Inicializar socket
-    #s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #s.bind((SERVER_IP, SERVER_PORT))
-
-    #print("...Server UP...")
-
-    #try:
-    #    # Esperar mensajes
-    #    while True:
-    #        data, _ = s.recvfrom(BUFF_SIZE)
-    #        segment = codec.parse_segment(data)
-
-    #        # Imprimir mensajes en pantalla
-    #        print(segment)
-    #except KeyboardInterrupt:
-    #    print("\n...Server DOWN...")
-
-    # ================================
-
-    #server = SocketTCP()
-    #server.bind((SERVER_IP, SERVER_PORT))
-    #conn, addr = server.accept()
-
-    #print(addr, conn.source, conn.seq)
-
-    # =================================
-
     server_socket = SocketTCP()
     server_socket.bind((SERVER_IP, SERVER_PORT))
     connection_socketTCP, new_address = server_socket.accept()
 
+    # Mostrar estado del socket
     print(connection_socketTCP)
 
     # Test 1
@@ -66,15 +40,9 @@ def main() -> None:
         print("Test 3: Passed")
     else:
         print("Test 3: Failed")
-    
-    #import time
-    #try:
-    #    print("Esperando netem")
-    #    while True:
-    #        time.sleep(1)
-    #except KeyboardInterrupt:
-    #    print("continuando operacion")
-
+   
     # Esperar cierre de conexión
     connection_socketTCP.recv_close()
+
+    # Mostrar estado del socket
     print(connection_socketTCP)
