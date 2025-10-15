@@ -37,13 +37,7 @@ def main() -> None:
     server_socket.bind((SERVER_IP, SERVER_PORT))
     connection_socketTCP, new_address = server_socket.accept()
 
-    #import time
-    #try:
-    #    print("Esperando netem")
-    #    while True:
-    #        time.sleep(1)
-    #except KeyboardInterrupt:
-    #    print("continuando operacion")
+    print(connection_socketTCP)
 
     # Test 1
     buff_size = 16
@@ -72,6 +66,14 @@ def main() -> None:
         print("Test 3: Passed")
     else:
         print("Test 3: Failed")
+    
+    import time
+    try:
+        print("Esperando netem")
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("continuando operacion")
 
     # Esperar cierre de conexión
     connection_socketTCP.recv_close()
