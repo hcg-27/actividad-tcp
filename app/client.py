@@ -59,13 +59,13 @@ def main() -> None:
     client_socketTCP.send(message)
 
     # Busy-waiting para esperar netem
-    import time
-    try:
-        print("esperando netem")
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("continuando operacion")
+    #import time
+    #try:
+    #    print("esperando netem")
+    #    while True:
+    #        time.sleep(1)
+    #except KeyboardInterrupt:
+    #    print("continuando operacion")
 
     # Cerrar Conexion
     client_socketTCP.close()

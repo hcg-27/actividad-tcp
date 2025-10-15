@@ -67,13 +67,13 @@ def main() -> None:
     else:
         print("Test 3: Failed")
     
-    import time
-    try:
-        print("Esperando netem")
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("continuando operacion")
+    #import time
+    #try:
+    #    print("Esperando netem")
+    #    while True:
+    #        time.sleep(1)
+    #except KeyboardInterrupt:
+    #    print("continuando operacion")
 
     # Esperar cierre de conexión
     connection_socketTCP.recv_close()

@@ -342,28 +342,88 @@ class SocketTCP:
 
         return received_message 
 
-    def close(self) -> None: 
-        
+    #def close(self) -> None: 
+    #    
+    #    # Crear FIN
+    #    fin = self.codec.create_segment(TCPSegment(fin=True, seq=self.seq))
+
+    #    # Enviar FIN al destino
+    #    self.udp.sendto(fin, self.destination)
+
+    #    # Esperar FIN-ACK
+    #    data = self.udp.recvfrom(DGRAM_SIZE)
+    #    fin_ack = self.codec.parse_segment(data[0])
+
+    #    if fin_ack.fin and fin_ack.ack and fin_ack.seq == self.seq + 1:
+
+    #        # Ajustar número de secuencia
+    #        self.seq = fin_ack.seq + 1
+
+    #    # Crear ACK
+    #    ack = self.codec.create_segment(TCPSegment(ack=True, seq=self.seq))
+
+    #    # Enviar ACK al destino
+    #    self.udp.sendto(ack, self.destination)
+
+    #    # Cerrar socket y resetear valores
+    #    self.udp.close()
+    #    self.source = ("", 0)
+    #    self.destination = ("", 0)
+    #    self.seq = 0
+    #    self.received = 0
+    #    self.to_receive = math.inf
+
+    def close(self) -> None:
+
         # Crear FIN
         fin = self.codec.create_segment(TCPSegment(fin=True, seq=self.seq))
+
+        # Establecer timeout
+        self.udp.settimeout(MAX_TIMEOUT)
 
         # Enviar FIN al destino
         self.udp.sendto(fin, self.destination)
 
-        # Esperar FIN-ACK
-        data = self.udp.recvfrom(DGRAM_SIZE)
-        fin_ack = self.codec.parse_segment(data[0])
+        while True:
 
-        if fin_ack.fin and fin_ack.ack and fin_ack.seq == self.seq + 1:
+            try:
 
-            # Ajustar número de secuencia
-            self.seq = fin_ack.seq + 1
+                # Esperar FIN+ACK
+                data, _ = self.udp.recvfrom(DGRAM_SIZE)
+                fin_ack = self.codec.parse_segment(data)
+
+                if fin_ack.fin and fin_ack.ack and fin_ack.seq == self.seq + 1:
+
+                    # Ajustar número de secuencia
+                    self.seq = fin_ack.seq + 1
+
+                    break
+
+            except TimeoutError:
+
+                # Reenviar FIN
+                self.udp.sendto(fin, self.destination)
 
         # Crear ACK
         ack = self.codec.create_segment(TCPSegment(ack=True, seq=self.seq))
 
         # Enviar ACK al destino
         self.udp.sendto(ack, self.destination)
+
+        try:
+
+            # Esperar un tiempo en caso de que el ACK se pierda
+            data, _ = self.udp.recvfrom(DGRAM_SIZE)
+            fin_ack = self.codec.parse_segment(data)
+
+            if fin_ack.fin and fin_ack.ack and fin_ack.seq == self.seq - 1:
+
+                # Reenviar ACK
+                self.udp.sendto(ack, self.destination)
+
+        except TimeoutError:
+
+            pass
 
         # Cerrar socket y resetear valores
         self.udp.close()
@@ -373,34 +433,79 @@ class SocketTCP:
         self.received = 0
         self.to_receive = math.inf
 
-    def recv_close(self) -> None: 
+
+    #def recv_close(self) -> None: 
+
+    #    # Esperar FIN
+    #    data = self.udp.recvfrom(DGRAM_SIZE)
+    #    fin = self.codec.parse_segment(data[0])
+
+    #    if fin.fin and fin.seq == self.seq:
+
+    #        # Actualizar número de secuencia
+    #        self.seq += 1
+
+    #        # Crear FIN+ACK
+    #        fin_ack = self.codec.create_segment(TCPSegment(ack=True, fin=True, seq=self.seq))
+
+    #        # Enviar FIN+ACK al destino
+    #        self.udp.sendto(fin_ack, self.destination)
+
+    #        # Esperar ACK
+    #        data = self.udp.recvfrom(DGRAM_SIZE)
+    #        ack = self.codec.parse_segment(data[0])
+
+    #        if ack.ack and ack.seq == self.seq + 1:
+
+    #            # Cerrar socket y resetear valores
+    #            self.udp.close()
+    #            self.source = ("", 0)
+    #            self.destination = ("", 0)
+    #            self.seq = 0
+    #            self.received = 0
+    #            self.to_receive = math.inf
+
+    def recv_close(self) -> None:
 
         # Esperar FIN
-        data = self.udp.recvfrom(DGRAM_SIZE)
-        fin = self.codec.parse_segment(data[0])
+        data, _ = self.udp.recvfrom(DGRAM_SIZE)
+        fin = self.codec.parse_segment(data)
 
         if fin.fin and fin.seq == self.seq:
 
             # Actualizar número de secuencia
             self.seq += 1
 
-            # Crear FIN+ACK
-            fin_ack = self.codec.create_segment(TCPSegment(ack=True, fin=True, seq=self.seq))
+        # Crear FIN+ACK
+        fin_ack = self.codec.create_segment(TCPSegment(fin=True, ack=True, seq=self.seq))
 
-            # Enviar FIN+ACK al destino
-            self.udp.sendto(fin_ack, self.destination)
+        # Establecer timeout
+        self.udp.settimeout(MAX_TIMEOUT)
 
-            # Esperar ACK
-            data = self.udp.recvfrom(DGRAM_SIZE)
-            ack = self.codec.parse_segment(data[0])
+        # Enviar FIN+ACK
+        self.udp.sendto(fin_ack, self.destination)
 
-            if ack.ack and ack.seq == self.seq + 1:
+        while True:
 
-                # Cerrar socket y resetear valores
-                self.udp.close()
-                self.source = ("", 0)
-                self.destination = ("", 0)
-                self.seq = 0
-                self.received = 0
-                self.to_receive = math.inf
+            try:
 
+                # Esperar ACK
+                data, _ = self.udp.recvfrom(DGRAM_SIZE)
+                ack = self.codec.parse_segment(data)
+
+                if ack.ack and ack.seq == self.seq + 1:
+
+                    # Cerrar socket y resetear valores
+                    self.udp.close()
+                    self.source = ("", 0)
+                    self.destination = ("", 0)
+                    self.seq = 0
+                    self.received = 0
+                    self.to_receive = math.inf
+
+                    break
+                
+            except TimeoutError:
+
+                # Reenviar FIN+ACK
+                self.udp.sendto(fin_ack, self.destination)
