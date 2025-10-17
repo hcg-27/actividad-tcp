@@ -9,13 +9,14 @@ class Parser:
     la aplicación en modo 'server' o 'client'.
 
     Modos disponibles:
-    - 'server': permite especificar una dirección IP y puerto en el formato IP:PUERTO.
-                Si no se proporciona, se usan los valores por defecto definidos en config.
-    'client': permite especificar la dirección IP y puerto del servidor al cual conectarse.
+    - 'server': permite especificar una IP y puerto en formato IP:PUERTO, tamaño de buffer y cantidad esperada de bytes
+                Si no se proporciona, se usan los valores por defecto definidos en config.py.
+    - 'client': permite especificar IP y puerto del servidor al cual conectarse en formato IP:PUERTO.
 
     Atributos:
         mode (str): Modo de ejecución seleccionado ('server' o 'client').
-        address (tuple): Tupla (ip, puerto), disponible en modo 'server' y 'client'.
+        address (tuple): Tupla (ip, puerto), disponible en 'server' y 'client'.
+        expected (int): Bytes que se esperan recibir, disponible en 'server'
         buffer (int): Tamaño del buffer, solo disponible en modo 'server'
 
     Métodos:
@@ -71,6 +72,13 @@ class Parser:
             default=config.BUFF_SIZE,
             help="tamaño de buffer a usar en el servidor"
         )
+        self.server_parser.add_argument(
+            "-e",
+            "--expected",
+            type=int,
+            default=config.EXPECTED_BYTES,
+            help="cantidad de bytes que se esperan recibir"
+        )
 
         # Configurar parser del cliente
         self.client_parser = self.subparsers.add_parser(
@@ -111,6 +119,10 @@ class Parser:
     @property
     def buffer(self) -> int:
         return self.args.buffer
+    
+    @property
+    def expected(self) -> int:
+        return self.args.expected
 
 
 if __name__ == "__main__":
@@ -122,6 +134,6 @@ if __name__ == "__main__":
     parser.parse_args()
 
     if parser.mode == "server":
-        server.main(parser.address, parser.buffer)
+        server.main(parser.address, parser.buffer, parser.expected)
     else:
         client.main(parser.address)

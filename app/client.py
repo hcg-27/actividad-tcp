@@ -1,32 +1,29 @@
-import socket
-from pathlib import Path
-from .config import *
-from tcp.segment import TCPSegment
-from tcp.codec import SegmentCodec as codec
 from tcp.socket_tcp import SocketTCP
 
-def main() -> None:
+def main(address: tuple[str, int]) -> None:
 
+    # Inicializar socket
     client_socketTCP = SocketTCP()
-    client_socketTCP.connect((SERVER_IP, SERVER_PORT))
+    
+    # Conectar con servidor
+    client_socketTCP.connect(address)
 
-    # Mostrar estado del socket
-    print(client_socketTCP)
+    print("...Client UP...")
 
-    # Test 1
-    message = "Mensje de len=16".encode()
-    client_socketTCP.send(message)
+    while True:
 
-    # Test 2
-    message = "Mensaje de largo 19".encode()
-    client_socketTCP.send(message)
+        # Esperar input del usuario
+        try:
 
-    # Test 3
-    message = "Mensaje de largo 19".encode()
-    client_socketTCP.send(message)
+            line = input().encode(encoding='utf-8')
+        
+        except EOFError:
+            
+            print("...Client DOWN...")
+            break
 
-    # Cerrar Conexion
+        # Enviar input al servidor
+        client_socketTCP.send(line)
+    
+    # Cerrar conexión
     client_socketTCP.close()
-
-    # Mostrar estado del socket
-    print(client_socketTCP)
