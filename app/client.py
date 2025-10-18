@@ -18,8 +18,7 @@ def main(address: tuple[str, int]) -> None:
             line = input().encode(encoding='utf-8')
         
         except EOFError:
-            
-            print("...Client DOWN...")
+
             break
 
         # Enviar input al servidor
@@ -27,3 +26,6 @@ def main(address: tuple[str, int]) -> None:
     
     # Cerrar conexión
     client_socketTCP.close()
+    print(client_socketTCP)
+
+    print("...Client DOWN...")

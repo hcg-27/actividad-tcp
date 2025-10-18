@@ -24,6 +24,7 @@ def main(address: tuple[str, int], buff_size: int, expected: int) -> None:
     print(received_data.decode())
 
     # Esperar cierre de conexión
-    server_socket.recv_close()
+    connection_socketTCP.recv_close()
+    print(connection_socketTCP)
 
     print("...Server DOWN...")

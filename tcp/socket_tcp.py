@@ -262,7 +262,6 @@ class SocketTCP:
 
                 self.seq += 1
                 self.received += len(segment.data)
-                print(segment.data)
                 received_message += segment.data
             
             # Enviar ACK
@@ -330,7 +329,6 @@ class SocketTCP:
         except TimeoutError:
 
             pass
-
         # Cerrar socket y resetear valores
         self.udp.close()
         self.source = ("", 0)
