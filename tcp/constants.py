@@ -1,5 +1,6 @@
 import math
 
 DGRAM_SIZE = 21
-MAX_TIMEOUT = 5
+MAX_TIMEOUT = 1
 MAX_ATTEMPTS = math.inf
+MAX_CLOSE_ATTEMPTS = 3

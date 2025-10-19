@@ -1,5 +1,6 @@
-import struct
 import math
+import struct
+import time
 from random import randint
 from socket import socket, AF_INET, SOCK_DGRAM
 from .constants import *
@@ -289,7 +290,8 @@ class SocketTCP:
         # Enviar FIN al destino
         self.udp.sendto(fin, self.destination)
 
-        while True:
+        close_attempts = 0
+        while close_attempts < MAX_CLOSE_ATTEMPTS:
 
             try:
 
@@ -308,34 +310,40 @@ class SocketTCP:
 
                 # Reenviar FIN
                 self.udp.sendto(fin, self.destination)
+                
+                # Aumentar intentos
+                close_attempts += 1
+
+                # Seguir con la siguiente iteración
+                continue
+        
+        else:
+
+            # Cerrar conexión unilateralmente
+            self.udp.close()
+            self.source = ("", 0)
+            self.destination = ("", 0)
+            self.seq = 0
+            self.received = 0
+            self.to_receive = math.inf
+
+            return
 
         # Crear ACK
         ack = self.codec.create_segment(TCPSegment(ack=True, seq=self.seq))
 
-        # Enviar ACK al destino
-        self.udp.sendto(ack, self.destination)
+        close_attempts = 0
+        while close_attempts < MAX_CLOSE_ATTEMPTS:
+            
+            # Enviar ACK al destino
+            self.udp.sendto(ack, self.destination)
 
-        try:
+            # Esperar un poco antes de reenvíar
+            time.sleep(MAX_TIMEOUT)
 
-            # Esperar un tiempo en caso de que el ACK se pierda
-            data, _ = self.udp.recvfrom(DGRAM_SIZE)
-            fin_ack = self.codec.parse_segment(data)
+            # Prepara proxima iteración
+            close_attempts += 1
 
-            if fin_ack.fin and fin_ack.ack and fin_ack.seq == self.seq - 1:
-
-                # Reenviar ACK
-                self.udp.sendto(ack, self.destination)
-
-        except TimeoutError:
-
-            pass
-        # Cerrar socket y resetear valores
-        self.udp.close()
-        self.source = ("", 0)
-        self.destination = ("", 0)
-        self.seq = 0
-        self.received = 0
-        self.to_receive = math.inf
 
     def recv_close(self) -> None:
 
@@ -357,7 +365,8 @@ class SocketTCP:
         # Enviar FIN+ACK
         self.udp.sendto(fin_ack, self.destination)
 
-        while True:
+        close_attempts = 0
+        while close_attempts < MAX_CLOSE_ATTEMPTS:
 
             try:
 
@@ -367,7 +376,7 @@ class SocketTCP:
 
                 if ack.ack and ack.seq == self.seq + 1:
 
-                    # Cerrar socket y resetear valores
+                    # Cerrar socket
                     self.udp.close()
                     self.source = ("", 0)
                     self.destination = ("", 0)
@@ -376,8 +385,21 @@ class SocketTCP:
                     self.to_receive = math.inf
 
                     break
-                
+
             except TimeoutError:
 
-                # Reenviar FIN+ACK
+                # Reenvíar FIN+ACk
                 self.udp.sendto(fin_ack, self.destination)
+
+                # Preparar proxima iteración
+                close_attempts += 1
+        
+        else:
+
+            # Cerrar conexión unilateralmente
+            self.udp.close()
+            self.source = ("", 0)
+            self.destination = ("", 0)
+            self.seq = 0
+            self.received = 0
+            self.to_receive = math.inf
