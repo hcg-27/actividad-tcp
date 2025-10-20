@@ -33,6 +33,15 @@ class SocketTCP:
 
         return repr
     
+    def _clean(self) -> None:
+
+        self.udp.close()
+        self.source = ("", 0)
+        self.destination = ("", 0)
+        self.seq = 0
+        self.received = 0
+        self.to_receive = math.inf
+    
     def bind(self, address: tuple[str, int]) -> None:
 
         self.udp.bind(address)
@@ -91,6 +100,9 @@ class SocketTCP:
         # Actualizar dirección de origen
         self.source = self.udp.getsockname()
 
+        # Resetear timeout
+        self.udp.settimeout(None)
+
     def accept(self) -> tuple["SocketTCP", tuple[str, int]]:
 
         data, destination = self.udp.recvfrom(DGRAM_SIZE)
@@ -143,6 +155,9 @@ class SocketTCP:
         seg = TCPSegment(data=struct.pack("!Q", length), seq=self.seq)
         seg_data = self.codec.create_segment(seg)
 
+        # Establecer timeout
+        self.udp.settimeout(TIMEOUT_SECONDS)
+
         # Enviar largo del mensaje
         while True:
 
@@ -157,6 +172,7 @@ class SocketTCP:
                 if check(ack, "a", self.seq + 1):
 
                     self.seq = ack.seq
+
                     break
 
                 # Caso en que se perdió el último ACK del handshake
@@ -197,6 +213,9 @@ class SocketTCP:
 
                 continue
         
+        # Resetear timeout
+        self.udp.settimeout(None)
+        
     def recv(self, buff_size: int) -> bytes:
 
         received_message = b''
@@ -232,3 +251,114 @@ class SocketTCP:
             self.to_receive = math.inf
         
         return received_message
+    
+    def close(self) -> None:
+
+        fin = TCPSegment(fin=True, seq=self.seq)
+        fin_data = self.codec.create_segment(fin)
+
+        # Establecer timeout
+        self.udp.settimeout(TIMEOUT_SECONDS)
+
+        close_attempts = 0
+        while close_attempts < MAX_CLOSE_ATTEMPTS:
+
+            try:
+
+                self.udp.sendto(fin_data, self.destination)
+
+                # Esperar FIN+ACK
+                data, _ = self.udp.recvfrom(DGRAM_SIZE)
+                fin_ack = self.codec.parse_segment(data)
+
+                if check(fin_ack, "af", self.seq + 1):
+
+                    self.seq = fin_ack.seq + 1
+
+                    break
+
+            except TimeoutError:
+
+                close_attempts += 1
+
+                continue
+        
+        else:
+
+            # Cerrar conexión unilateralmente
+            self._clean()
+
+            return
+        
+        ack = TCPSegment(ack=True, seq=self.seq)
+        ack_data = self.codec.create_segment(ack)
+
+        # Envíar ACK hasta un máximo de MAX_CLOSE_ATTEMPTS veces
+        close_attempts = 0
+        while close_attempts < MAX_CLOSE_ATTEMPTS:
+
+            self.udp.sendto(ack_data, self.destination)
+
+            time.sleep(WAIT_SECONDS)
+
+            close_attempts += 1
+        
+        # Cerrar conexión
+        self._clean()
+
+        return
+    
+    def recv_close(self) -> None:
+    
+        while True:
+
+            # Esperar FIN
+            data, _ = self.udp.recvfrom(DGRAM_SIZE)
+            fin = self.codec.parse_segment(data)
+
+            if check(fin, "f", self.seq):
+
+                self.seq += 1
+
+                break
+
+            elif check(fin, "", self.seq - 1):
+
+                # Reenviar ack anterior
+                seg_ack = TCPSegment(ack=True, seq=self.seq)
+                seg_ack_data = self.codec.create_segment(seg_ack)
+
+                self.udp.sendto(seg_ack_data, self.destination)
+
+        fin_ack = TCPSegment(ack=True, fin=True, seq=self.seq)
+        fin_ack_data = self.codec.create_segment(fin_ack)
+
+        # Establecer timeout
+        self.udp.settimeout(TIMEOUT_SECONDS)
+
+        close_attempts = 0
+        while close_attempts < MAX_CLOSE_ATTEMPTS:
+
+            try:
+
+                self.udp.sendto(fin_ack_data, self.destination)
+
+                data, _ = self.udp.recvfrom(DGRAM_SIZE)
+                ack = self.codec.parse_segment(data)
+
+                if check(ack, "a", self.seq + 1):
+
+                    self._clean()
+
+                    break
+
+            except TimeoutError:
+
+                close_attempts += 1
+
+                continue
+
+        else:
+
+            # Cerrar conexión unilateralmente
+            self._clean()       
