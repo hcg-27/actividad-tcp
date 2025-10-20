@@ -1,5 +1,6 @@
 import math
 import random
+import struct
 import time
 from socket import socket, AF_INET, SOCK_DGRAM
 from .consts import *
@@ -16,7 +17,7 @@ class SocketTCP:
         self.destination: tuple[str, int] = ("", 0)
         self.seq: int = 0
         self.codec: SegmentCodec = SegmentCodec()
-        self.waiting_first: bool = True
+        self.waiting_len: bool = True
         self.received: int = 0
         self.to_receive: int | float = math.inf
     
@@ -54,14 +55,13 @@ class SocketTCP:
                 
             try:
 
-                # Enviar ACK
                 self.udp.sendto(syn_data, self.destination)
 
                 # Esperar SYN+ACK
                 data, destination = self.udp.recvfrom(DGRAM_SIZE)
                 syn_ack = self.codec.parse_segment(data)
 
-                if check(syn_ack, "sa") and syn_ack.seq == self.seq + 1:
+                if check(syn_ack, "sa", self.seq + 1):
 
                     # Ajustar número de secuencia
                     self.seq = syn_ack.seq + 1
@@ -80,8 +80,7 @@ class SocketTCP:
 
         conn_attempts = 0
         while conn_attempts < MAX_CONN_ATTEMPTS:
-
-            # Enviar ACK    
+   
             self.udp.sendto(ack_data, self.destination)
 
             # Esperar un tiempo antes de volver a mandar ACK
@@ -97,7 +96,7 @@ class SocketTCP:
         data, destination = self.udp.recvfrom(DGRAM_SIZE)
         syn = self.codec.parse_segment(data)
 
-        if check(syn, "s"):
+        if check(syn, "s", None):
 
             # Crear y configurar nuevo socket
             new_socket = SocketTCP()
@@ -115,14 +114,13 @@ class SocketTCP:
 
             try:
 
-                # Enviar SYN+ACK
                 new_socket.udp.sendto(syn_ack_data, new_socket.destination)
 
                 # Esperar ACK
                 data, _ = new_socket.udp.recvfrom(DGRAM_SIZE)
                 ack = self.codec.parse_segment(data)
 
-                if check(ack, "a") and ack.seq == new_socket.seq + 1:
+                if check(ack, "a", new_socket.seq + 1):
 
                     # Ajustar número de secuencia
                     new_socket.seq = ack.seq
@@ -137,3 +135,100 @@ class SocketTCP:
         new_socket.udp.settimeout(None)
 
         return new_socket, new_socket.source
+    
+    def send(self, message: bytes) -> None:
+
+        length = len(message)
+
+        seg = TCPSegment(data=struct.pack("!Q", length), seq=self.seq)
+        seg_data = self.codec.create_segment(seg)
+
+        # Enviar largo del mensaje
+        while True:
+
+            try:
+
+                self.udp.sendto(seg_data, self.destination)
+
+                # Esperar ACK
+                data, _ = self.udp.recvfrom(DGRAM_SIZE)
+                ack  = self.codec.parse_segment(data)
+
+                if check(ack, "a", self.seq + 1):
+
+                    self.seq = ack.seq
+                    break
+
+                # Caso en que se perdió el último ACK del handshake
+                elif check(ack, "sa", self.seq - 1):
+
+                    # Reenviar ACK de conexión
+                    conn_ack = TCPSegment(ack=True, seq=self.seq)
+                    conn_ack_data = self.codec.create_segment(conn_ack)
+                    
+                    self.udp.sendto(conn_ack_data, self.destination)
+            
+            except TimeoutError:
+
+                continue
+        
+        # Enviar mensaje por trozos de tamaño MSS
+        sent = 0
+        to_send = length
+        while sent < to_send:
+
+            try:
+
+                seg = TCPSegment(seq=self.seq, data=message[sent:sent+MSS])
+                seg_data = self.codec.create_segment(seg)
+
+                self.udp.sendto(seg_data, self.destination)
+
+                # Esperar ACK
+                data, _ = self.udp.recvfrom(DGRAM_SIZE)
+                ack = self.codec.parse_segment(data)
+
+                if check(ack, "a", self.seq + 1):
+
+                    self.seq = ack.seq
+                    sent += MSS
+                
+            except TimeoutError:
+
+                continue
+        
+    def recv(self, buff_size: int) -> bytes:
+
+        received_message = b''
+        while (self.received < self.to_receive and
+               len(received_message) < buff_size):
+            
+            data, _ = self.udp.recvfrom(DGRAM_SIZE)
+            seg = self.codec.parse_segment(data)
+
+            if self.waiting_len and check(seg, "", self.seq):
+
+                self.seq += 1
+                self.to_receive = struct.unpack("!Q", seg.data)[0]
+                self.waiting_len = False
+            
+            elif check(seg, "", self.seq):
+
+                self.seq += 1
+                self.received += len(seg.data)
+                received_message += seg.data
+            
+            # Enviar ACK
+            seg = TCPSegment(ack=True, seq=self.seq)
+            data = self.codec.create_segment(seg)
+
+            self.udp.sendto(data, self.destination)
+        
+        # Resetear variables si se recibio todo el mensaje
+        if self.received >= self.to_receive:
+
+            self.waiting_len = True
+            self.received = 0
+            self.to_receive = math.inf
+        
+        return received_message

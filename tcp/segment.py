@@ -10,9 +10,10 @@ class TCPSegment:
     seq: int = 0
     data: bytes = b''
 
-def check(segment: TCPSegment, flags: str):
+def check(segment: TCPSegment, flags: str, expected_seq: None | int) -> bool:
 
-    res = True
+    if (expected_seq is not None) and (segment.seq != expected_seq):
+        return False
 
     match flags:
         case "saf":
@@ -27,3 +28,5 @@ def check(segment: TCPSegment, flags: str):
             return segment.ack and not (segment.syn or segment.fin)
         case "f":
             return segment.fin and not (segment.syn or segment.ack)
+        case _:
+            return not (segment.fin or segment.ack or segment.fin)
