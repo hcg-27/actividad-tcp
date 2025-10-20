@@ -1,30 +1,13 @@
 from tcp.socket_tcp import SocketTCP
+from .config import *
 
-def main(address: tuple[str, int], buff_size: int, expected: int) -> None:
 
-    # Inicializar socket
-    server_socket = SocketTCP()
+def main():
 
-    # Dejar servidor eschando en la dirección deseada
-    server_socket.bind(address)
+    s = SocketTCP()
 
-    print("...Server UP...")
+    s.bind((SERVER_IP, SERVER_PORT))
 
-    # Aceptar conexión
-    connection_socketTCP, _ = server_socket.accept()
+    s.accept()
 
-    received_data = b""
-    received_bytes = 0
-    expected_bytes = expected
-    while received_bytes < expected_bytes:
-        received_data += connection_socketTCP.recv(buff_size)
-        received_bytes = len(received_data)
-
-    # Imprimir mensaje
-    print(received_data.decode())
-
-    # Esperar cierre de conexión
-    connection_socketTCP.recv_close()
-    print(connection_socketTCP)
-
-    print("...Server DOWN...")
+    print(s)

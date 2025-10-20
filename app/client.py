@@ -1,31 +1,11 @@
 from tcp.socket_tcp import SocketTCP
+from .config import *
 
-def main(address: tuple[str, int]) -> None:
 
-    # Inicializar socket
-    client_socketTCP = SocketTCP()
-    
-    # Conectar con servidor
-    client_socketTCP.connect(address)
+def main():
 
-    print("...Client UP...")
+    s = SocketTCP()
 
-    while True:
+    s.connect((SERVER_IP, SERVER_PORT))
 
-        # Esperar input del usuario
-        try:
-
-            line = input().encode(encoding='utf-8')
-        
-        except EOFError:
-
-            break
-
-        # Enviar input al servidor
-        client_socketTCP.send(line)
-    
-    # Cerrar conexión
-    client_socketTCP.close()
-    print(client_socketTCP)
-
-    print("...Client DOWN...")
+    print(s)
