@@ -1,22 +1,26 @@
 import argparse
 from app import client, server
-from app.config import SERVER_IP, SERVER_PORT
 
 
 class Parser:
     def __init__(self) -> None:
-        self.parser = argparse.ArgumentParser()
+        self.parser = argparse.ArgumentParser(add_help=False)
 
-        self.parser.add_argument("mode", choices=["server", "client",],
+        self.parser.add_argument("mode", choices=["servidor", "cliente",],
                                  help="Selecciona modo de ejecución")
+        
+        self.parser.add_argument("address", type=str,
+                                 help="Dirección del servidor")
+        
+        self.parser.add_argument("port", type=int,
+                                 help="Puerto del servidor")
+        
+        self.parser.add_argument("-h", "--help",
+                                 action="help",
+                                 help="Muestra este mensaje y termina")
 
         self.parser.add_argument("-d", "--debug", action="store_true",
                                  help="Activa modo debug")
-        
-        address_help = "Dirección del servidor en formato IP:PUERTO"
-        self.parser.add_argument("-a", "--address", nargs="?",
-                                 default=f"{SERVER_IP}:{SERVER_PORT}",
-                                 help=address_help)
 
     def parse_args(self) -> bool:
         self.args = self.parser.parse_args()
@@ -31,9 +35,10 @@ class Parser:
     
     @property
     def get_address(self) -> tuple[str, int]:
-        ip, port = self.args.address.split(":")
+        addr = self.args.address
+        port = self.args.port
 
-        return ip, int(port)
+        return addr, int(port)
     
     
 
@@ -42,9 +47,9 @@ if __name__ == "__main__":
     parser = Parser()
     parser.parse_args()
 
-    if parser.get_mode == "server":
+    if parser.get_mode == "servidor":
         server.main(parser.get_address, parser.debug_enabled)
-    elif parser.get_mode == "client":
+    elif parser.get_mode == "cliente":
         client.main(parser.get_address, parser.debug_enabled)
     else:
         exit(1)
