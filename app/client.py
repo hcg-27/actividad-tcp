@@ -1,24 +1,26 @@
 from tcp.socket_tcp import SocketTCP
 
 
-def main(address: tuple[str, int], debug_enabled: bool):
-
-    #s = SocketTCP()
-    #s.connect((SERVER_IP, SERVER_PORT))
-    #print(s)
+def main(address: tuple[str, int], debug_enabled: bool) -> None:
 
     client_socketTCP = SocketTCP(debug_enabled)
     client_socketTCP.connect(address)
-    print(client_socketTCP)
-    # test 1
-    message = "Mensje de len=16".encode()
-    client_socketTCP.send(message)
-    # test 2
-    message = "Mensaje de largo 19".encode()
-    client_socketTCP.send(message)
-    # test 3
-    message = "Mensaje de largo 19".encode()
-    client_socketTCP.send(message)
+
+    print("CLIENT STATUS: ON")
+    
+    while True:
+
+        try:
+
+            # Leer archivo línea por línea
+            line = input().encode(encoding='utf-8')
+
+        # Hasta que se alcance el EOF
+        except EOFError:
+
+            break
+
+        client_socketTCP.send(line)
 
     client_socketTCP.close()
-    print(client_socketTCP)
+    print("CLIENT STATUS: OFF")
