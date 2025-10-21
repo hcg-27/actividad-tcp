@@ -1,16 +1,15 @@
 from tcp.socket_tcp import SocketTCP
-from .config import *
 
 
-def main():
+def main(address: tuple[str, int], debug_enabled: bool = False):
 
     #s = SocketTCP()
     #s.bind((SERVER_IP, SERVER_PORT))
     #s.accept()
     #print(s)
 
-    server_socketTCP = SocketTCP()
-    server_socketTCP.bind((SERVER_IP, SERVER_PORT))
+    server_socketTCP = SocketTCP(debug_enabled)
+    server_socketTCP.bind(address)
     connection_socketTCP, new_address = server_socketTCP.accept()
     print(connection_socketTCP)
     

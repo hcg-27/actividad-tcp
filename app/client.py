@@ -1,15 +1,14 @@
 from tcp.socket_tcp import SocketTCP
-from .config import *
 
 
-def main():
+def main(address: tuple[str, int], debug_enabled: bool):
 
     #s = SocketTCP()
     #s.connect((SERVER_IP, SERVER_PORT))
     #print(s)
 
-    client_socketTCP = SocketTCP()
-    client_socketTCP.connect((SERVER_IP, SERVER_PORT))
+    client_socketTCP = SocketTCP(debug_enabled)
+    client_socketTCP.connect(address)
     print(client_socketTCP)
     # test 1
     message = "Mensje de len=16".encode()
