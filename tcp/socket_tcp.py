@@ -51,10 +51,6 @@ class SocketTCP:
 
     def connect(self, address: tuple[str, int]) -> None:
 
-        if self.debug_enabled:
-            print(f"Estableciendo conexión con servidor")
-            print(f"Manejo de perdidas: Si")
-
         self.seq = random.randint(0, 100)
 
         syn = TCPSegment(syn=True, seq=self.seq)
@@ -69,12 +65,6 @@ class SocketTCP:
         while True:
                 
             try:
-
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} connect: "
-                    msg += f"enviando syn {syn.seq}"
-                    print(msg)
-                    self.log_number += 1
 
                 self.udp.sendto(syn_data, self.destination)
 
@@ -94,12 +84,6 @@ class SocketTCP:
             
             except TimeoutError:
 
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} connect: "
-                    msg += f"no llegó ack de syn {syn.seq}"
-                    print(msg)
-                    self.log_number += 1
-
                 continue
         
         ack = TCPSegment(ack=True, seq=self.seq)
@@ -107,13 +91,6 @@ class SocketTCP:
 
         conn_attempts = 0
         while conn_attempts < MAX_CONN_ATTEMPTS:
-
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} connect: "
-                msg += f"enviando ack {ack.seq} para cerrar handshake, "
-                msg += f"intento: {conn_attempts + 1}"
-                print(msg)
-                self.log_number += 1
    
             self.udp.sendto(ack_data, self.destination)
 
@@ -125,21 +102,10 @@ class SocketTCP:
         # Actualizar dirección de origen
         self.source = self.udp.getsockname()
 
-        if self.debug_enabled:
-            msg = f"{self.log_number:.>5} connect: "
-            msg += f"conexión establecida con {self.destination}"
-            print(msg)
-            self.log_number += 1
-
         # Resetear timeout
         self.udp.settimeout(None)
 
     def accept(self) -> tuple["SocketTCP", tuple[str, int]]:
-
-        if self.debug_enabled:
-            print("Esperando conexión")
-            print("Manejo de perdidas: Si")
-            print("esperando syn")
 
         data, destination = self.udp.recvfrom(DGRAM_SIZE)
         syn = self.codec.parse_segment(data)
@@ -152,12 +118,6 @@ class SocketTCP:
             new_socket.destination = destination
             new_socket.bind(("0.0.0.0", 0))
 
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} accept: "
-                msg += f"nuevo socket creado en: {new_socket.source}"
-                print(msg)
-                self.log_number += 1
-
         syn_ack = TCPSegment(syn=True, ack=True, seq=new_socket.seq)
         syn_ack_data = self.codec.create_segment(syn_ack)
 
@@ -167,12 +127,6 @@ class SocketTCP:
         while True:
 
             try:
-
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} accept: "
-                    msg += f"enviando syn+ack {syn_ack.seq}"
-                    print(msg)
-                    self.log_number += 1
 
                 new_socket.udp.sendto(syn_ack_data, new_socket.destination)
 
@@ -189,22 +143,10 @@ class SocketTCP:
             
             except TimeoutError:
 
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} accept: "
-                    msg += f"no llegó ack de syn+ack {syn_ack.seq}"
-                    print(msg)
-                    self.log_number += 1
-
                 continue
 
         # Resetear timeout
         new_socket.udp.settimeout(None)
-
-        if self.debug_enabled:
-            msg = f"{self.log_number:.>5} accept: "
-            msg += f"conexión establecida con {new_socket.destination}"
-            print(msg)
-            self.log_number += 1
 
         return new_socket, new_socket.source
     
@@ -222,12 +164,6 @@ class SocketTCP:
         while True:
 
             try:
-
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} send: "
-                    msg += f"enviando largo del mensaje"
-                    print(msg)
-                    self.log_number += 1
 
                 self.udp.sendto(seg_data, self.destination)
 
@@ -247,22 +183,10 @@ class SocketTCP:
                     # Reenviar ACK de conexión
                     conn_ack = TCPSegment(ack=True, seq=self.seq)
                     conn_ack_data = self.codec.create_segment(conn_ack)
-
-                    if self.debug_enabled:
-                        msg = f"{self.log_number:.>5} send: "
-                        msg += "reenviando último ack del handshake"
-                        print(msg)
-                        self.log_number += 1
                     
                     self.udp.sendto(conn_ack_data, self.destination)
             
             except TimeoutError:
-
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} send: "
-                    msg += f"no llegó ack del largo del mensaje"
-                    print(msg)
-                    self.log_number += 1
 
                 continue
         
@@ -275,12 +199,6 @@ class SocketTCP:
 
                 seg = TCPSegment(seq=self.seq, data=message[sent:sent+MSS])
                 seg_data = self.codec.create_segment(seg)
-
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} send: "
-                    msg += f"enviando segmento {seg.seq}"
-                    print(msg)
-                    self.log_number += 1
 
                 self.udp.sendto(seg_data, self.destination)
 
@@ -295,12 +213,6 @@ class SocketTCP:
                 
             except TimeoutError:
 
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} send :"
-                    msg += f"no llegó ack de segmento {seg.seq}"
-                    print(msg)
-                    self.log_number += 1
-
                 continue
         
         # Resetear timeout
@@ -311,12 +223,6 @@ class SocketTCP:
         received_message = b''
         while (self.received < self.to_receive and
                len(received_message) < buff_size):
-            
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} recv: "
-                msg += f"esperando segmento {self.seq}"
-                print(msg)
-                self.log_number += 1
             
             data, _ = self.udp.recvfrom(DGRAM_SIZE)
             seg = self.codec.parse_segment(data)
@@ -337,12 +243,6 @@ class SocketTCP:
             ack = TCPSegment(ack=True, seq=self.seq)
             ack_data = self.codec.create_segment(ack)
 
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} recv: "
-                msg += f"enviando ack de segmento {seg.seq}"
-                print(msg)
-                self.log_number += 1
-
             self.udp.sendto(ack_data, self.destination)
         
         # Resetear variables si se recibio todo el mensaje
@@ -351,19 +251,10 @@ class SocketTCP:
             self.waiting_len = True
             self.received = 0
             self.to_receive = math.inf
-
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} recv: "
-                msg += f"mensaje recibido en su totalidad"
-                print(msg)
-                self.log_number += 1
         
         return received_message
     
     def close(self) -> None:
-
-        if self.debug_enabled:
-            print("Cerrando conexión")
 
         fin = TCPSegment(fin=True, seq=self.seq)
         fin_data = self.codec.create_segment(fin)
@@ -375,13 +266,6 @@ class SocketTCP:
         while close_attempts < MAX_CLOSE_ATTEMPTS:
 
             try:
-
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} close: "
-                    msg += f"enviando fin {fin.seq}, "
-                    msg += f"intento: {close_attempts + 1}"
-                    print(msg)
-                    self.log_number += 1
 
                 self.udp.sendto(fin_data, self.destination)
 
@@ -397,23 +281,11 @@ class SocketTCP:
 
             except TimeoutError:
 
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} close: "
-                    msg += f"no llegó ack de fin {fin.seq}"
-                    print(msg)
-                    self.log_number += 1
-
                 close_attempts += 1
 
                 continue
         
         else:
-
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} close: "
-                msg += f"cerrando conexión unilateralmente"
-                print(msg)
-                self.log_number += 1
 
             # Cerrar conexión unilateralmente
             self._clean()
@@ -426,13 +298,6 @@ class SocketTCP:
         # Envíar ACK hasta un máximo de MAX_CLOSE_ATTEMPTS veces
         close_attempts = 0
         while close_attempts < MAX_CLOSE_ATTEMPTS:
-
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} close: "
-                msg += f"enviando último ack {ack.seq}, "
-                msg += f"intento: {close_attempts + 1}"
-                print(msg)
-                self.log_number += 1
 
             self.udp.sendto(ack_data, self.destination)
 
@@ -448,12 +313,6 @@ class SocketTCP:
     def recv_close(self) -> None:
     
         while True:
-
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} recv_close: "
-                msg += f"esperando fin"
-                print(msg)
-                self.log_number += 1
 
             # Esperar FIN
             data, _ = self.udp.recvfrom(DGRAM_SIZE)
@@ -471,12 +330,6 @@ class SocketTCP:
                 seg_ack = TCPSegment(ack=True, seq=self.seq)
                 seg_ack_data = self.codec.create_segment(seg_ack)
 
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} recv_close: "
-                    msg += f"reenviando ack de segmento {fin.seq}"
-                    print(msg)
-                    self.log_number += 1
-
                 self.udp.sendto(seg_ack_data, self.destination)
 
         fin_ack = TCPSegment(ack=True, fin=True, seq=self.seq)
@@ -489,13 +342,6 @@ class SocketTCP:
         while close_attempts < MAX_CLOSE_ATTEMPTS:
 
             try:
-
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} recv_close: "
-                    msg += f"enviando fin+ack {fin_ack.seq}, "
-                    msg += f"intento: {close_attempts + 1}"
-                    print(msg)
-                    self.log_number += 1
 
                 self.udp.sendto(fin_ack_data, self.destination)
 
@@ -510,23 +356,11 @@ class SocketTCP:
 
             except TimeoutError:
 
-                if self.debug_enabled:
-                    msg = f"{self.log_number:.>5} recv_close: "
-                    msg += f"no se recibio ack de fin+ack {fin_ack.seq}"
-                    print(msg)
-                    self.log_number += 1
-
                 close_attempts += 1
 
                 continue
 
         else:
-
-            if self.debug_enabled:
-                msg = f"{self.log_number:.>5} recv_close: "
-                msg += f"cerrando conexión unilateralmente"
-                print(msg)
-                self.log_number += 1
 
             # Cerrar conexión unilateralmente
             self._clean()       
