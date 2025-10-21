@@ -8,20 +8,20 @@ def main(address: tuple[str, int], debug_enabled: bool = False):
 
     print("SERVER STATUS: ON")
 
+    if debug_enabled:
+        print("========== MODO DEBUG ==========")
+        print("MANEJANDO PERDIDAS: SI")
+
     connection_socketTCP, _ = server_socketTCP.accept()
     
-    while True:
-        
-        try: 
+    received_msg = connection_socketTCP.recv(21)
 
-            data = connection_socketTCP.recv(21)
-            print(data.decode())
-        
-        except KeyboardInterrupt:
+    # Mientras queden bytes por recibir
+    while not connection_socketTCP.waiting_len:
+        received_msg += connection_socketTCP.recv(21)
 
-            break
+    print("\n" + received_msg.decode())
     
-
     connection_socketTCP.recv_close()
     
     print("\nSERVER STATUS: OFF")

@@ -3,24 +3,28 @@ from tcp.socket_tcp import SocketTCP
 
 def main(address: tuple[str, int], debug_enabled: bool) -> None:
 
+    print("CLIENT STATUS: ON")
+
+    if debug_enabled:
+        print("========== MODO DEBUG ==========")
+        print("MANEJANDO PERDIDAS: SI")
+
     client_socketTCP = SocketTCP(debug_enabled)
     client_socketTCP.connect(address)
-
-    print("CLIENT STATUS: ON")
     
+    message = b""
     while True:
 
         try:
 
-            # Leer archivo línea por línea
-            line = input().encode(encoding='utf-8')
-
-        # Hasta que se alcance el EOF
+            message += input().encode("utf-8")
+        
         except EOFError:
 
             break
 
-        client_socketTCP.send(line)
+    client_socketTCP.send(message)
+    
 
     client_socketTCP.close()
     print("CLIENT STATUS: OFF")
