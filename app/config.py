@@ -1,3 +1,0 @@
-BUFF_SIZE = 16
-SERVER_IP = "localhost"
-SERVER_PORT = 5000
