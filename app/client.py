@@ -1,31 +1,30 @@
 from tcp.socket_tcp import SocketTCP
 
-def main(address: tuple[str, int]) -> None:
 
-    # Inicializar socket
-    client_socketTCP = SocketTCP()
-    
-    # Conectar con servidor
+def main(address: tuple[str, int], debug_enabled: bool) -> None:
+
+    print("CLIENT STATUS: ON")
+
+    if debug_enabled:
+        print("========== MODO DEBUG ==========")
+        print("MANEJANDO PERDIDAS: SI")
+
+    client_socketTCP = SocketTCP(debug_enabled)
     client_socketTCP.connect(address)
-
-    print("...Client UP...")
-
+    
+    message = b""
     while True:
 
-        # Esperar input del usuario
         try:
 
-            line = input().encode(encoding='utf-8')
+            message += input().encode("utf-8")
         
         except EOFError:
 
             break
 
-        # Enviar input al servidor
-        client_socketTCP.send(line)
+    client_socketTCP.send(message)
     
-    # Cerrar conexión
-    client_socketTCP.close()
-    print(client_socketTCP)
 
-    print("...Client DOWN...")
+    client_socketTCP.close()
+    print("CLIENT STATUS: OFF")

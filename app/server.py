@@ -1,30 +1,28 @@
 from tcp.socket_tcp import SocketTCP
 
-def main(address: tuple[str, int], buff_size: int, expected: int) -> None:
 
-    # Inicializar socket
-    server_socket = SocketTCP()
+def main(address: tuple[str, int], debug_enabled: bool = False):
 
-    # Dejar servidor eschando en la dirección deseada
-    server_socket.bind(address)
+    server_socketTCP = SocketTCP(debug_enabled)
+    server_socketTCP.bind(address)
 
-    print("...Server UP...")
+    print("SERVER STATUS: ON")
 
-    # Aceptar conexión
-    connection_socketTCP, _ = server_socket.accept()
+    if debug_enabled:
+        print("========== MODO DEBUG ==========")
+        print("MANEJANDO PERDIDAS: SI")
 
-    received_data = b""
-    received_bytes = 0
-    expected_bytes = expected
-    while received_bytes < expected_bytes:
-        received_data += connection_socketTCP.recv(buff_size)
-        received_bytes = len(received_data)
+    connection_socketTCP, _ = server_socketTCP.accept()
+    
+    received_msg = connection_socketTCP.recv(21)
 
-    # Imprimir mensaje
-    print(received_data.decode())
+    # Mientras queden bytes por recibir
+    while not connection_socketTCP.waiting_len:
+        received_msg += connection_socketTCP.recv(21)
 
-    # Esperar cierre de conexión
+    print("\n" + received_msg.decode())
+    
     connection_socketTCP.recv_close()
-    print(connection_socketTCP)
-
-    print("...Server DOWN...")
+    
+    print("\nSERVER STATUS: OFF")
+    
