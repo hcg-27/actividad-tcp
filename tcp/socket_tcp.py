@@ -19,7 +19,7 @@ class SocketTCP:
         self.codec: SegmentCodec = SegmentCodec()
         self.waiting_len: bool = True
         self.received: int = 0
-        self.to_receive: int | float = math.inf
+        self.to_receive: int | float = math.inf # Con este valor se asegura que el socket espero el tiempo necesario hasta que llegue el largo del mensaje
         self.debug_enabled: bool = debug_enabled
         self.log_number: int = 1
     
@@ -227,6 +227,7 @@ class SocketTCP:
             data, _ = self.udp.recvfrom(DGRAM_SIZE)
             seg = self.codec.parse_segment(data)
 
+            # Esperando largo del mensaje
             if self.waiting_len and check(seg, "", self.seq):
 
                 self.seq += 1
